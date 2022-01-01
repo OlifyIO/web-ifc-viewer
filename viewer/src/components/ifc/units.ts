@@ -4,7 +4,7 @@ import { IfcManager } from './ifc-manager';
 export enum UnitType {
   LENGTHUNIT = 'LENGTHUNIT',
   AREAUNIT = 'AREAUNIT',
-  VOLUMEUNIT = 'VOLUMEUNIT',
+  VOLUMEUNIT = 'VOLUMEUNIT'
 }
 
 export const UnitScale: { [unit: string]: number } = {
@@ -41,13 +41,11 @@ export class IfcUnits {
     const units = unitReference.Units;
 
     Object.values(UnitType).forEach((value) => {
-      const foundUnit = units.find(
-        (item: any) => item.UnitType && item.UnitType.value === value
-      );
+      const foundUnit = units.find((item: any) => item.UnitType && item.UnitType.value === value);
       if (foundUnit) {
         const prefix = foundUnit.Prefix as any;
         let scale;
-        if (prefix === null) scale = UnitScale.NONE;
+        if (!prefix) scale = UnitScale.NONE;
         else scale = UnitScale[prefix.value];
         this.allUnits[modelID][value] = scale;
       }
