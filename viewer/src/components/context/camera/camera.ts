@@ -1,3 +1,4 @@
+import CameraControls from 'camera-controls';
 import {
   Box3,
   Camera,
@@ -15,7 +16,6 @@ import {
   Vector3,
   Vector4
 } from 'three';
-import CameraControls from 'camera-controls';
 import {
   CameraProjections,
   Context,
@@ -27,8 +27,8 @@ import {
 import { LiteEvent } from '../../../utils/LiteEvent';
 import { FirstPersonControl } from './controls/first-person-control';
 import { OrbitControl } from './controls/orbit-control';
-import { ProjectionManager } from './projection-manager';
 import { PlanControl } from './controls/plan-control';
+import { ProjectionManager } from './projection-manager';
 
 const subsetOfTHREE = {
   MOUSE,
@@ -158,7 +158,9 @@ export class IfcCamera extends IfcComponent {
 
   async targetItem(mesh: Mesh) {
     const center = this.context.getCenter(mesh);
-    await this.cameraControls.moveTo(center.x, center.y, center.z, true);
+    if (center) {
+      await this.cameraControls.moveTo(center.x, center.y, center.z, true);
+    }
   }
 
   private setOrthoCameraAspect(dims: Vector2) {

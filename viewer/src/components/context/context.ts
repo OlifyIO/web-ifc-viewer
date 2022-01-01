@@ -1,11 +1,11 @@
 import { Clock, Mesh, Object3D, Plane, Vector2, Vector3 } from 'three';
 import { Context, IfcComponent, Items, NavigationModes, ViewerOptions } from '../../base-types';
+import { Animator } from './animator';
 import { IfcCamera } from './camera/camera';
+import { IfcEvent, IfcEvents } from './ifcEvent';
 import { IfcRaycaster } from './raycaster';
 import { IfcRenderer } from './renderer/renderer';
 import { IfcScene } from './scene';
-import { Animator } from './animator';
-import { IfcEvent, IfcEvents } from './ifcEvent';
 
 export class IfcContext implements Context {
   options: ViewerOptions;
@@ -84,18 +84,16 @@ export class IfcContext implements Context {
   }
 
   getCenter(mesh: Mesh) {
-    mesh.geometry.computeBoundingBox();
-    if (!mesh.geometry.index) return new Vector3();
+    if (!mesh.geometry.index || !mesh.geometry.index.array.length) return null;
     const indices = mesh.geometry.index.array;
     const position = mesh.geometry.attributes.position;
 
-    const threshold = 20;
     let xCoords = 0;
     let yCoords = 0;
     let zCoords = 0;
     let counter = 0;
 
-    for (let i = 0; i < indices.length || i < threshold; i++) {
+    for (let i = 0; i < indices.length; i++) {
       xCoords += position.getX(indices[i]);
       yCoords += position.getY(indices[i]);
       zCoords += position.getZ(indices[i]);

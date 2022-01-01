@@ -2,26 +2,24 @@ import {
   Camera,
   Color,
   Intersection,
-  Material,
-  Object3D,
+  Material, Mesh,
+  MOUSE, Object3D,
   Plane,
   Renderer,
   Scene,
   Vector2,
-  Vector3,
-  Mesh,
-  MOUSE
+  Vector3
 } from 'three';
 import { IfcMesh } from 'web-ifc-three/IFC/BaseDefinitions';
 import { Animator } from './components/context/animator';
-import { OrbitControl } from './components/context/camera/controls/orbit-control';
-import { FirstPersonControl } from './components/context/camera/controls/first-person-control';
 import { IfcCamera } from './components/context/camera/camera';
-import { LiteEvent } from './utils/LiteEvent';
+import { FirstPersonControl } from './components/context/camera/controls/first-person-control';
+import { OrbitControl } from './components/context/camera/controls/orbit-control';
+import { PlanControl } from './components/context/camera/controls/plan-control';
 import { IfcEvents } from './components/context/ifcEvent';
 import { IfcRenderer } from './components/context/renderer/renderer';
-import { PlanControl } from './components/context/camera/controls/plan-control';
 import { IfcScene } from './components/context/scene';
+import { LiteEvent } from './utils/LiteEvent';
 
 export interface MouseButtons {
   left: MOUSE;
@@ -88,7 +86,7 @@ export interface Context {
   getDimensions: () => Vector2;
   getClippingPlanes: () => Plane[];
   getAnimator: () => Animator;
-  getCenter: (mesh: Mesh) => Vector3;
+  getCenter: (mesh: Mesh) => Vector3 | null;
   ifcCamera: IfcCamera;
 
   fitToFrame: () => void;
