@@ -1,6 +1,6 @@
-import { IFCLoader } from 'web-ifc-three/IFCLoader';
 import { Material, MeshBasicMaterial, Scene } from 'three';
 import { IFCModel } from 'three/examples/jsm/loaders/IFCLoader';
+import { IFCLoader } from 'web-ifc-three/IFCLoader';
 import { Context } from '../../base-types';
 
 export class VisibilityManager {
@@ -44,8 +44,12 @@ export class VisibilityManager {
   private changeModelMaterial(modelID: number, material?: Material) {
     const mesh = this.getMesh(modelID);
     if (mesh) {
-      this.modelMaterials[modelID].model = mesh;
-      this.modelMaterials[modelID].materials = mesh.material;
+      if (!this.modelMaterials[modelID]) {
+        this.modelMaterials[modelID] = {
+          model: mesh,
+          materials: mesh.material
+        };
+      }
       mesh.material = material || this.invisibleMaterial;
     }
   }
@@ -53,12 +57,13 @@ export class VisibilityManager {
   private restoreOriginalModelMaterial(modelID: number) {
     if (this.modelMaterials[modelID]) {
       this.modelMaterials[modelID].model.material = this.modelMaterials[modelID].materials;
+      delete this.modelMaterials[modelID];
     }
   }
 
   private makeOriginalModelPickable(modelID: number) {
     const originalModel = this.context.items.ifcModels.find((mesh) => mesh.modelID === modelID);
-    if (originalModel) {
+    if (originalModel && !this.context.items.pickableIfcModels.includes(originalModel)) {
       this.context.items.pickableIfcModels.push(originalModel);
       return;
     }
@@ -66,10 +71,9 @@ export class VisibilityManager {
   }
 
   private makeModelNotPickable(modelID: number) {
+    const originalModel = this.context.items.ifcModels.find((mesh) => mesh.modelID === modelID);
     this.context.items.pickableIfcModels = this.context.items.pickableIfcModels.filter(
-      (ifcMesh) => {
-        return ifcMesh.modelID !== modelID;
-      }
+      (ifcMesh) => ifcMesh !== originalModel
     );
   }
 
