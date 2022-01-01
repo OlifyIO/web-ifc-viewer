@@ -22,8 +22,6 @@ export class SectionFillManager {
     this.setupMaterial(material);
     const subset = this.getSubset(modelID, ids, material, name);
     if (!subset) return null;
-    this.context.items.ifcModels.push(model);
-    this.context.items.pickableIfcModels.push(model);
 
     subset.position.copy(model.position);
     subset.rotation.copy(model.rotation);
