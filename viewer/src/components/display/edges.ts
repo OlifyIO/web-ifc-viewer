@@ -1,5 +1,5 @@
-import { LineSegments, EdgesGeometry, Material } from 'three';
-import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
+import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
+import { EdgesGeometry, LineSegments, Material } from 'three';
 import { Context } from '../../base-types';
 
 export class Edges {

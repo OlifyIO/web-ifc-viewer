@@ -1,16 +1,18 @@
+import { IfcMesh } from '@olifyio/web-ifc-three/IFC/BaseDefinitions';
 import {
   Camera,
   Color,
   Intersection,
-  Material, Mesh,
-  MOUSE, Object3D,
+  Material,
+  Mesh,
+  MOUSE,
+  Object3D,
   Plane,
   Renderer,
   Scene,
   Vector2,
   Vector3
 } from 'three';
-import { IfcMesh } from 'web-ifc-three/IFC/BaseDefinitions';
 import { Animator } from './components/context/animator';
 import { IfcCamera } from './components/context/camera/camera';
 import { FirstPersonControl } from './components/context/camera/controls/first-person-control';

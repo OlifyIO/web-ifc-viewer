@@ -1,6 +1,6 @@
+import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
 import { AmbientLight, Color, DirectionalLight, Object3D, Scene } from 'three';
-import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
-import { IfcComponent, ViewerOptions, Context } from '../../base-types';
+import { Context, IfcComponent, ViewerOptions } from '../../base-types';
 
 export class IfcScene extends IfcComponent {
   scene: Scene;

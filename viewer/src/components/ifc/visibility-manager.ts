@@ -1,6 +1,6 @@
+import { IFCLoader } from '@olifyio/web-ifc-three/IFCLoader';
 import { Material, MeshBasicMaterial, Scene } from 'three';
 import { IFCModel } from 'three/examples/jsm/loaders/IFCLoader';
-import { IFCLoader } from 'web-ifc-three/IFCLoader';
 import { Context } from '../../base-types';
 
 export class VisibilityManager {

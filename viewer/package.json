@@ -1,6 +1,6 @@
 {
-  "name": "web-ifc-viewer",
-  "version": "1.0.117",
+  "name": "@olifyio/web-ifc-viewer",
+  "version": "1.0.118",
   "description": "IFC viewer",
   "main": "dist/index.js",
   "scripts": {
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ifcjs/web-ifc-viewer.git"
+    "url": "git+https://github.com/OlifyIO/web-ifc-viewer.git"
   },
   "keywords": [
     "ifc",
@@ -23,9 +23,9 @@
   "author": "agviegas",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/agviegas/web-ifc-viewer/issues"
+    "url": "https://github.com/OlifyIO/web-ifc-viewer/issues"
   },
-  "homepage": "https://github.com/agviegas/web-ifc-viewer",
+  "homepage": "https://github.com/OlifyIO/web-ifc-viewer",
   "dependencies": {
     "camera-controls": "^1.33.1",
     "dat.gui": "^0.7.7",
@@ -33,7 +33,7 @@
     "postprocessing": "^6.23.1",
     "three-mesh-bvh": "^0.5.2",
     "web-ifc": "^0.0.32",
-    "web-ifc-three": "^0.0.99"
+    "@olifyio/web-ifc-three": "0.0.100"
   },
   "devDependencies": {
     "@types/dat.gui": "^0.7.7",

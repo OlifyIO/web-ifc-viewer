@@ -1,5 +1,5 @@
+import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
 import { BackSide, Material } from 'three';
-import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
 import { Context } from '../../base-types';
 import { IfcManager } from '../ifc';
 

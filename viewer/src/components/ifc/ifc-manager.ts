@@ -1,13 +1,13 @@
 // @ts-ignore
-import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+import { IfcMesh, IfcModel } from '@olifyio/web-ifc-three/IFC/BaseDefinitions';
+import { IFCLoader } from '@olifyio/web-ifc-three/IFCLoader';
 import { DoubleSide, Material, Matrix4, MeshLambertMaterial } from 'three';
-import { IfcMesh, IfcModel } from 'web-ifc-three/IFC/BaseDefinitions';
-import { IFCLoader } from 'web-ifc-three/IFCLoader';
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
 import { LoaderSettings } from 'web-ifc';
-import { IfcComponent, Context } from '../../base-types';
+import { Context, IfcComponent } from '../../base-types';
 import { IfcSelection } from './selection';
-import { VisibilityManager } from './visibility-manager';
 import { IfcUnits } from './units';
+import { VisibilityManager } from './visibility-manager';
 
 export class IfcManager extends IfcComponent {
   loader: IFCLoader;
