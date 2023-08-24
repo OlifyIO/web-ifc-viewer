@@ -5,19 +5,22 @@ import {
   Group,
   Line,
   LineBasicMaterial,
-  MeshBasicMaterial,
   Mesh,
-  Vector3,
-  Camera
+  MeshBasicMaterial,
+  Vector3
 } from 'three';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer';
-import { Context } from '../../../base-types';
+import { IfcContext } from '../../context';
+import { disposeMeshRecursively } from '../../../utils/ThreeUtils';
+import { CameraProjections } from '../../../base-types';
 
 export class IfcDimensionLine {
-  private readonly context: Context;
-  private readonly camera: Camera;
+  private readonly context: IfcContext;
   private readonly labelClassName: string;
   static scaleFactor = 0.1;
+
+  static scale = 1;
+  static units = 'm';
 
   // Elements
   private root = new Group();
@@ -30,22 +33,22 @@ export class IfcDimensionLine {
   private endpoint: BufferGeometry;
 
   // Dimensions
-  private start: Vector3;
-  private end: Vector3;
-  private center: Vector3;
+  start: Vector3;
+  end: Vector3;
+  center: Vector3;
   private length: number;
   private scale = new Vector3(1, 1, 1);
 
   // Materials
-  private lineMaterial: LineBasicMaterial;
-  private endpointMaterial: MeshBasicMaterial;
+  private readonly lineMaterial: LineBasicMaterial;
+  private readonly endpointMaterial: MeshBasicMaterial;
 
   // Bounding box
   private boundingMesh?: Mesh;
   private readonly boundingSize = 0.05;
 
   constructor(
-    context: Context,
+    context: IfcContext,
     start: Vector3,
     end: Vector3,
     lineMaterial: LineBasicMaterial,
@@ -77,9 +80,37 @@ export class IfcDimensionLine {
     this.root.renderOrder = 2;
     this.context.getScene().add(this.root);
 
-    this.camera = this.context.getCamera();
     this.context.ifcCamera.onChange.on(() => this.rescaleObjectsToCameraPosition());
     this.rescaleObjectsToCameraPosition();
+  }
+
+  dispose() {
+    this.removeFromScene();
+    (this.context as any) = null;
+    disposeMeshRecursively(this.root as any);
+    (this.root as any) = null;
+    disposeMeshRecursively(this.line as any);
+    (this.line as any) = null;
+    this.endpointMeshes.forEach((mesh) => disposeMeshRecursively(mesh));
+    this.endpointMeshes.length = 0;
+    this.axis.dispose();
+    (this.axis as any) = null;
+    this.endpoint.dispose();
+    (this.endpoint as any) = null;
+
+    this.textLabel.removeFromParent();
+    this.textLabel.element.remove();
+    (this.textLabel as any) = null;
+
+    this.lineMaterial.dispose();
+    (this.lineMaterial as any) = null;
+    this.endpointMaterial.dispose();
+    (this.endpointMaterial as any) = null;
+
+    if (this.boundingMesh) {
+      disposeMeshRecursively(this.boundingMesh);
+      (this.boundingMesh as any) = null;
+    }
   }
 
   get boundingBox() {
@@ -147,7 +178,11 @@ export class IfcDimensionLine {
   }
 
   private rescaleMesh(mesh: Mesh, scalefactor = 1, x = true, y = true, z = true) {
-    let scale = new Vector3().subVectors(mesh.position, this.camera.position).length();
+    const camera = this.context.ifcCamera.activeCamera;
+    let scale = new Vector3().subVectors(mesh.position, camera.position).length();
+    if (this.context.ifcCamera.projection === CameraProjections.Orthographic) {
+      scale *= 0.1;
+    }
     scale *= scalefactor;
     const scaleX = x ? scale : 1;
     const scaleY = y ? scale : 1;
@@ -180,7 +215,7 @@ export class IfcDimensionLine {
   }
 
   private getTextContent() {
-    return `${this.length} m`;
+    return `${this.length * IfcDimensionLine.scale} ${IfcDimensionLine.units}`;
   }
 
   private newBoundingBox() {

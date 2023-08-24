@@ -1,7 +1,9 @@
-import { Object3D, Vector3, Matrix3, Intersection, Mesh, Plane } from 'three';
-import { IfcComponent, Context } from '../../../base-types';
+import { Vector3, Matrix3, Intersection, Mesh, Plane } from 'three';
+import { Subsets } from 'web-ifc-three/IFC/components/subsets/SubsetManager';
+import { IfcComponent } from '../../../base-types';
 import { IfcPlane } from './planes';
 import { IfcManager } from '../../ifc';
+import { IfcContext } from '../../context';
 
 export class IfcClipper extends IfcComponent {
   dragging: boolean;
@@ -12,10 +14,10 @@ export class IfcClipper extends IfcComponent {
   planeSize = 5;
   private edgesEnabled: boolean;
   private enabled: boolean;
-  private readonly context: Context;
+  private readonly context: IfcContext;
   private readonly ifc: IfcManager;
 
-  constructor(context: Context, ifc: IfcManager) {
+  constructor(context: IfcContext, ifc: IfcManager) {
     super(context);
     this.context = context;
     this.ifc = ifc;
@@ -38,6 +40,7 @@ export class IfcClipper extends IfcComponent {
       }
     });
     this.updateMaterials();
+    this.context.renderer.postProduction.visible = true;
   }
 
   get edgesActive() {
@@ -51,6 +54,17 @@ export class IfcClipper extends IfcComponent {
     });
   }
 
+  toggle() {
+    this.active = !this.active;
+  }
+
+  dispose() {
+    this.planes.forEach((plane) => plane.dispose());
+    this.planes.length = 0;
+    (this.context as any) = null;
+    (this.ifc as any) = null;
+  }
+
   createPlane = () => {
     if (!this.enabled) return;
     const intersects = this.context.castRayIfc();
@@ -62,7 +76,6 @@ export class IfcClipper extends IfcComponent {
   createFromNormalAndCoplanarPoint = (normal: Vector3, point: Vector3, isPlan = false) => {
     const plane = new IfcPlane(
       this.context,
-      this.ifc,
       point,
       normal,
       this.activateDragging,
@@ -90,12 +103,13 @@ export class IfcClipper extends IfcComponent {
     this.planes.splice(index, 1);
     this.context.removeClippingPlane(existingPlane.plane);
     this.updateMaterials();
+    this.context.renderer.postProduction.update();
   };
 
   deleteAllPlanes = () => {
-    this.planes.forEach((plane) => plane.removeFromScene());
-    this.planes = [];
-    this.updateMaterials();
+    while (this.planes.length > 0) {
+      this.deletePlane(this.planes[0]);
+    }
   };
 
   private pickPlane = () => {
@@ -144,7 +158,6 @@ export class IfcClipper extends IfcComponent {
   private newPlane(intersection: Intersection, worldNormal: Vector3) {
     return new IfcPlane(
       this.context,
-      this.ifc,
       intersection.point,
       worldNormal,
       this.activateDragging,
@@ -156,20 +169,32 @@ export class IfcClipper extends IfcComponent {
 
   private activateDragging = () => {
     this.dragging = true;
+    this.context.renderer.postProduction.visible = false;
   };
 
   private deactivateDragging = () => {
     this.dragging = false;
+    this.context.renderer.postProduction.visible = true;
   };
 
   private updateMaterials = () => {
+    // Apply clipping to all models
     const planes = this.context.getClippingPlanes();
-    // Applying clipping to IfcObjects only. This could be improved.
-    this.context.items.ifcModels.forEach((obj: Object3D) => {
-      const mesh = obj as Mesh;
-      if (mesh.material) this.updateMaterial(mesh, planes);
-      if (mesh.userData.wireframe) this.updateMaterial(mesh.userData.wireframe, planes);
+    this.context.items.ifcModels.forEach((model) => {
+      if (Array.isArray(model.material)) {
+        model.material.forEach((mat) => (mat.clippingPlanes = planes));
+      } else {
+        model.material.clippingPlanes = planes;
+      }
     });
+    // Applying clipping to all subsets. then we can also filter and apply only to specified subsest as parameter
+    Object.values(this.ifc.loader.ifcManager.subsets.getAllSubsets()).forEach(
+      (subset: Subsets[string]) => {
+        const mesh = subset.mesh as Mesh;
+        if (mesh.material) this.updateMaterial(mesh, planes);
+        if (mesh.userData.wireframe) this.updateMaterial(mesh.userData.wireframe, planes);
+      }
+    );
   };
 
   private updateMaterial(mesh: Mesh, planes: Plane[]) {

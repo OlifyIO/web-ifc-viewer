@@ -104,9 +104,20 @@ html, body {
 }
 
 .loading-progress {
-    color: white;
+    color: black;
 }
 
 .hidden {
     display: none;
+}
+
+.floating-top {
+    position: absolute;
+    top: 1rem;
+    z-index: 10000;
+    left: 4rem;
+}
+
+.floating-top label {
+    margin-right: 0.5em;
 }

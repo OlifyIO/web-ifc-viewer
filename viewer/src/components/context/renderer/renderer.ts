@@ -1,49 +1,48 @@
-import { Color, Vector2, WebGLRenderer } from 'three';
+import { Camera, Vector2, WebGLRenderer } from 'three';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer';
-import { Context, IfcComponent } from '../../../base-types';
-import { IfcPostproduction } from './postproduction';
-
-export interface RendererAPI {
-  domElement: HTMLElement;
-  render(...args: any): void;
-  setSize(width: number, height: number): void;
-}
+import { IfcComponent } from '../../../base-types';
+import { Postproduction } from './postproduction';
+import { IfcContext } from '../context';
 
 export class IfcRenderer extends IfcComponent {
-  basicRenderer = new WebGLRenderer({ antialias: true });
+  renderer: WebGLRenderer;
   renderer2D = new CSS2DRenderer();
-  postProductionRenderer: IfcPostproduction;
-  renderer: RendererAPI = this.basicRenderer;
+  postProduction: Postproduction;
+  tempCanvas?: HTMLCanvasElement;
+  tempRenderer?: WebGLRenderer;
 
-  postProductionActive = false;
+  blocked = false;
 
   private readonly container: HTMLElement;
-  private readonly context: Context;
+  private readonly context: IfcContext;
 
-  constructor(context: Context) {
+  constructor(context: IfcContext) {
     super(context);
     this.context = context;
     this.container = context.options.container;
+    this.renderer = new WebGLRenderer({ alpha: true, antialias: true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
     this.setupRenderers();
-    this.postProductionRenderer = new IfcPostproduction(
-      this.context,
-      this.basicRenderer.domElement
-    );
+    this.postProduction = new Postproduction(this.context, this.renderer);
     this.adjustRendererSize();
   }
 
-  get usePostproduction() {
-    return this.postProductionActive;
-  }
-
-  set usePostproduction(active: boolean) {
-    if (this.postProductionActive === active) return;
-    this.postProductionActive = active;
-    this.renderer = active ? this.postProductionRenderer : this.basicRenderer;
-    if (!active) this.restoreRendererBackgroundColor();
+  dispose() {
+    this.renderer.domElement.remove();
+    this.renderer.dispose();
+    this.postProduction.dispose();
+    (this.postProduction as any) = null;
+    (this.renderer as any) = null;
+    (this.renderer2D as any) = null;
+    (this.container as any) = null;
+    (this.context as any) = null;
+    this.tempRenderer?.dispose();
+    this.tempCanvas?.remove();
   }
 
   update(_delta: number) {
+    if (this.blocked) return;
     const scene = this.context.getScene();
     const camera = this.context.getCamera();
     this.renderer.render(scene, camera);
@@ -51,39 +50,54 @@ export class IfcRenderer extends IfcComponent {
   }
 
   getSize() {
-    return new Vector2(
-      this.basicRenderer.domElement.clientWidth,
-      this.basicRenderer.domElement.clientHeight
-    );
+    return new Vector2(this.renderer.domElement.clientWidth, this.renderer.domElement.clientHeight);
   }
 
   adjustRendererSize() {
-    this.basicRenderer.setSize(this.container.clientWidth, this.container.clientHeight);
-    this.renderer2D.setSize(this.container.clientWidth, this.container.clientHeight);
-    this.postProductionRenderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    const width = this.container.clientWidth;
+    const height = this.container.clientHeight;
+    this.renderer.setSize(width, height);
+    this.postProduction.setSize(width, height);
+    this.renderer2D.setSize(width, height);
   }
 
-  newScreenshot(usePostproduction = false) {
+  newScreenshot(camera?: Camera, dimensions?: Vector2) {
+    const previousDimensions = this.getSize();
+
+    const domElement = this.renderer.domElement;
+    const tempCanvas = domElement.cloneNode(true) as HTMLCanvasElement;
+
+    // Using a new renderer to make screenshots without updating what the user sees in the canvas
+    if (!this.tempRenderer) {
+      this.tempRenderer = new WebGLRenderer({ canvas: tempCanvas, antialias: true });
+      this.tempRenderer.localClippingEnabled = true;
+    }
+
+    if (dimensions) {
+      this.tempRenderer.setSize(dimensions.x, dimensions.y);
+      this.context.ifcCamera.updateAspect(dimensions);
+    }
+
+    // todo add this later to have a centered screenshot
+    // await this.context.getIfcCamera().currentNavMode.fitModelToFrame();
+
     const scene = this.context.getScene();
-    const camera = this.context.getCamera();
-    this.renderer.render(scene, camera);
-    const domElement = usePostproduction
-      ? this.basicRenderer.domElement
-      : this.postProductionRenderer.renderer.domElement;
-    return domElement.toDataURL();
+    const cameraToRender = camera || this.context.getCamera();
+    this.tempRenderer.render(scene, cameraToRender);
+    const result = this.tempRenderer.domElement.toDataURL();
+
+    if (dimensions) this.context.ifcCamera.updateAspect(previousDimensions);
+
+    return result;
   }
 
   private setupRenderers() {
-    this.basicRenderer.localClippingEnabled = true;
-    this.container.appendChild(this.basicRenderer.domElement);
+    this.renderer.localClippingEnabled = true;
+    this.container.appendChild(this.renderer.domElement);
 
     this.renderer2D.domElement.style.position = 'absolute';
     this.renderer2D.domElement.style.top = '0px';
     this.renderer2D.domElement.style.pointerEvents = 'none';
     this.container.appendChild(this.renderer2D.domElement);
-  }
-
-  private restoreRendererBackgroundColor() {
-    this.basicRenderer.setClearColor(new Color(0,0,0), 0);
   }
 }

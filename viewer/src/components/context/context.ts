@@ -1,16 +1,20 @@
 import { Clock, Mesh, Object3D, Plane, Vector2, Vector3 } from 'three';
-import { Context, IfcComponent, Items, NavigationModes, ViewerOptions } from '../../base-types';
 import { Animator } from './animator';
 import { IfcCamera } from './camera/camera';
 import { IfcEvent, IfcEvents } from './ifcEvent';
 import { IfcRaycaster } from './raycaster';
 import { IfcRenderer } from './renderer/renderer';
 import { IfcScene } from './scene';
+import { IfcComponent, Items, NavigationModes, ViewerOptions } from '../../base-types';
+import { IfcMouse } from './mouse';
 
-export class IfcContext implements Context {
+export class IfcContext {
   options: ViewerOptions;
   items: Items;
   ifcCamera: IfcCamera;
+  stats: any = null;
+  mouse: IfcMouse;
+
   readonly scene: IfcScene;
   readonly renderer: IfcRenderer;
   readonly events: IfcEvents;
@@ -19,6 +23,8 @@ export class IfcContext implements Context {
   private readonly ifcCaster: IfcRaycaster;
   private readonly ifcAnimator: Animator;
 
+  private isThisBeingDisposed = false;
+
   constructor(options: ViewerOptions) {
     if (!options.container) throw new Error('Could not get container element!');
     this.options = options;
@@ -26,6 +32,7 @@ export class IfcContext implements Context {
     this.items = this.newItems();
     this.scene = new IfcScene(this);
     this.renderer = new IfcRenderer(this);
+    this.mouse = new IfcMouse(this.renderer.renderer.domElement);
 
     this.ifcCamera = new IfcCamera(this);
     this.events.publish(IfcEvent.onCameraReady);
@@ -38,12 +45,52 @@ export class IfcContext implements Context {
     this.render();
   }
 
+  dispose() {
+    this.isThisBeingDisposed = true;
+
+    this.stats?.dom.remove();
+
+    this.options.preselectMaterial?.dispose();
+    this.options.selectMaterial?.dispose();
+    (this.options as any) = null;
+
+    this.items.components.length = 0;
+    this.items.ifcModels.forEach((model) => {
+      model.removeFromParent();
+      if (model.geometry.boundsTree) model.geometry.disposeBoundsTree();
+      model.geometry.dispose();
+      if (Array.isArray(model.material)) model.material.forEach((mat) => mat.dispose());
+      else model.material.dispose();
+    });
+    this.items.ifcModels.length = 0;
+    this.items.pickableIfcModels.length = 0;
+    (this.items as any) = null;
+
+    this.ifcCamera.dispose();
+    (this.ifcCamera as any) = null;
+    this.scene.dispose();
+    (this.scene as any) = null;
+    this.renderer.dispose();
+    (this.mouse as any) = null;
+    (this.renderer as any) = null;
+    this.events.dispose();
+    (this.events as any) = null;
+    this.ifcCaster.dispose();
+    (this.ifcCaster as any) = null;
+    this.ifcAnimator.dispose();
+    (this.ifcAnimator as any) = null;
+
+    (this.clock as any) = null;
+    this.clippingPlanes.length = 0;
+    this.unsetWindowRescale();
+  }
+
   getScene() {
     return this.scene.scene;
   }
 
   getRenderer() {
-    return this.renderer.basicRenderer;
+    return this.renderer.renderer;
   }
 
   getRenderer2D() {
@@ -100,9 +147,14 @@ export class IfcContext implements Context {
       counter++;
     }
 
-    return new Vector3(xCoords / counter, yCoords / counter, zCoords / counter);
+    return new Vector3(
+      xCoords / counter + mesh.position.x,
+      yCoords / counter + mesh.position.y,
+      zCoords / counter + mesh.position.z
+    );
   }
 
+  // eslint-disable-next-line no-undef
   addComponent(component: IfcComponent) {
     this.items.components.push(component);
   }
@@ -138,8 +190,23 @@ export class IfcContext implements Context {
   }
 
   private render = () => {
+    if (this.isThisBeingDisposed) return;
+    if (this.stats) this.stats.begin();
+    const isWebXR = this.options.webXR || false;
+    if (isWebXR) {
+      this.renderForWebXR();
+    } else {
     requestAnimationFrame(this.render);
+    }
     this.updateAllComponents();
+    if (this.stats) this.stats.end();
+  };
+
+  private renderForWebXR = () => {
+    const newAnimationLoop = () => {
+      this.getRenderer().render(this.getScene(), this.getCamera());
+    };
+    this.getRenderer().setAnimationLoop(newAnimationLoop);
   };
 
   private updateAllComponents() {
@@ -148,10 +215,16 @@ export class IfcContext implements Context {
   }
 
   private setupWindowRescale() {
-    window.addEventListener('resize', () => {
-      this.updateAspect();
-    });
+    window.addEventListener('resize', this.resize);
   }
+
+  private unsetWindowRescale() {
+    window.removeEventListener('resize', this.resize);
+  }
+
+  private resize = () => {
+    this.updateAspect();
+  };
 
   private newItems(): Items {
     return {

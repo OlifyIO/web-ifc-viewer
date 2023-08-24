@@ -1,27 +1,10 @@
-import { IfcMesh } from '@olifyio/web-ifc-three/IFC/BaseDefinitions';
-import {
-  Camera,
-  Color,
-  Intersection,
-  Material,
-  Mesh,
-  MOUSE,
-  Object3D,
-  Plane,
-  Renderer,
-  Scene,
-  Vector2,
-  Vector3
-} from 'three';
-import { Animator } from './components/context/animator';
-import { IfcCamera } from './components/context/camera/camera';
-import { FirstPersonControl } from './components/context/camera/controls/first-person-control';
+import { Camera, Color, Material, MOUSE } from 'three';
+import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
 import { OrbitControl } from './components/context/camera/controls/orbit-control';
-import { PlanControl } from './components/context/camera/controls/plan-control';
-import { IfcEvents } from './components/context/ifcEvent';
-import { IfcRenderer } from './components/context/renderer/renderer';
-import { IfcScene } from './components/context/scene';
+import { FirstPersonControl } from './components/context/camera/controls/first-person-control';
 import { LiteEvent } from './utils/LiteEvent';
+import { PlanControl } from './components/context/camera/controls/plan-control';
+import { IfcContext } from './components';
 
 export interface MouseButtons {
   left: MOUSE;
@@ -46,6 +29,7 @@ export interface NavigationMode {
   enabled: boolean;
   onChange: LiteEvent<any>;
   onChangeProjection: LiteEvent<Camera>;
+  fitModelToFrame : any
 }
 
 export interface NavModeManager {
@@ -59,55 +43,25 @@ export interface ViewerOptions {
   preselectMaterial?: Material;
   selectMaterial?: Material;
   backgroundColor?: Color;
+  webXR?: boolean;
 }
 
 interface Component {
   update: (_delta: number) => void;
-  dispose: () => void;
 }
 
 export interface Items {
   components: Component[];
-  ifcModels: IfcMesh[];
-  pickableIfcModels: IfcMesh[];
-}
-
-export interface Context {
-  items: Items;
-  options: ViewerOptions;
-
-  events: IfcEvents;
-  renderer: IfcRenderer;
-  scene: IfcScene;
-
-  getScene: () => Scene;
-  getCamera: () => Camera;
-  getRenderer: () => Renderer;
-  getDomElement: () => HTMLElement;
-  getDomElement2D: () => HTMLElement;
-  getDimensions: () => Vector2;
-  getClippingPlanes: () => Plane[];
-  getAnimator: () => Animator;
-  getCenter: (mesh: Mesh) => Vector3 | null;
-  ifcCamera: IfcCamera;
-
-  fitToFrame: () => void;
-  toggleCameraControls: (active: boolean, options?: any) => void;
-  addComponent: (component: Component) => void;
-  addClippingPlane: (plane: Plane) => void;
-  removeClippingPlane: (plane: Plane) => void;
-  castRay: (items: Object3D[]) => Intersection[];
-  castRayIfc: () => Intersection | null;
+  ifcModels: IFCModel[];
+  pickableIfcModels: IFCModel[];
 }
 
 export abstract class IfcComponent implements Component {
-  protected constructor(context: Context) {
+  protected constructor(context: IfcContext) {
     context.addComponent(this);
   }
 
   update(_delta: number) {}
-
-  dispose() {}
 }
 
 export interface fpsControl {

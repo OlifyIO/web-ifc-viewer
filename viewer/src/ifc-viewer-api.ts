@@ -7,7 +7,6 @@ import {
   IfcAxes,
   IfcClipper,
   DropboxAPI,
-  IfcStats,
   Edges,
   SectionFillManager,
   IfcDimensions,
@@ -17,74 +16,52 @@ import { GLTFManager } from './components/import-export/glTF';
 import { ShadowDropper } from './components/display/shadow-dropper';
 import { DXFWriter } from './components/import-export/dxf';
 import { PDFWriter } from './components/import-export/pdf';
+import { EdgeProjector } from './components/import-export/edges-vectorizer/edge-projection';
+import { ClippingEdges } from './components/display/clipping-planes/clipping-edges';
+import { SelectionWindow } from './components/selection/selection-window';
 
 export class IfcViewerAPI {
-  public context: IfcContext;
+  context: IfcContext;
   IFC: IfcManager;
+  GLTF: GLTFManager;
   clipper: IfcClipper;
   plans: PlanManager;
-  fills: SectionFillManager;
+  filler: SectionFillManager;
   dimensions: IfcDimensions;
   edges: Edges;
   shadowDropper: ShadowDropper;
   dxf: DXFWriter;
   pdf: PDFWriter;
-  gltf: GLTFManager;
-  stats?: IfcStats;
-  grid?: IfcGrid;
-  axes?: IfcAxes;
-  dropbox?: DropboxAPI;
+  edgesProjector: EdgeProjector;
+  grid: IfcGrid;
+  axes: IfcAxes;
+  dropbox: DropboxAPI;
+  selectionWindow: SelectionWindow;
 
   constructor(options: ViewerOptions) {
     if (!options.container) throw new Error('Could not get container element!');
     this.context = new IfcContext(options);
     this.IFC = new IfcManager(this.context);
+    this.grid = new IfcGrid(this.context);
+    this.axes = new IfcAxes(this.context);
     this.clipper = new IfcClipper(this.context, this.IFC);
     this.plans = new PlanManager(this.IFC, this.context, this.clipper);
-    this.fills = new SectionFillManager(this.IFC, this.context);
+    this.filler = new SectionFillManager(this.IFC, this.context);
     this.dimensions = new IfcDimensions(this.context);
     this.edges = new Edges(this.context);
-    this.shadowDropper = new ShadowDropper(this.context, this.IFC);
+    this.shadowDropper = this.IFC.shadowDropper;
+    this.edgesProjector = new EdgeProjector(this.context);
     this.dxf = new DXFWriter();
     this.pdf = new PDFWriter();
-    this.gltf = new GLTFManager(this.context);
+    this.GLTF = new GLTFManager(this.context, this.IFC);
+    this.dropbox = new DropboxAPI(this.context, this.IFC);
+    this.selectionWindow = new SelectionWindow(this.context);
+    ClippingEdges.ifc = this.IFC;
+    ClippingEdges.context = this.context;
   }
 
   /**
-   * Adds a base [grid](https://threejs.org/docs/#api/en/helpers/GridHelper) to the scene.
-   * @size (optional) Size of the grid.
-   * @divisions (optional) Number of divisions in X and Y.
-   * @ColorCenterLine (optional) Color of the XY central lines of the grid.
-   * @colorGrid (optional) Color of the XY lines of the grid.
-   */
-  addGrid(size?: number, divisions?: number, colorCenterLine?: Color, colorGrid?: Color) {
-    this.grid = new IfcGrid(this.context, size, divisions, colorCenterLine, colorGrid);
-  }
-
-  /**
-   * Adds base [axes](https://threejs.org/docs/#api/en/helpers/AxesHelper) to the scene.
-   * @size (optional) Size of the axes.
-   */
-  addAxes(size?: number) {
-    this.axes = new IfcAxes(this.context, size);
-  }
-
-  /**
-   * Adds [stats](https://github.com/mrdoob/stats.js/) to the scene for testing purposes. For example:
-   * ```js
-   *     this.loader.addStats('position:fixed;top:6rem;right:0px;z-index:1;');
-   * ```
-   * @css The css text to control where to locate the stats.
-   * @stats The stats.js API object
-   */
-  addStats(css = '', stats?: any) {
-    // @ts-ignore
-    this.stats = new IfcStats(this.context);
-    this.stats?.initializeStats(stats);
-    this.stats?.addStats(css);
-  }
-
-  /**
+   * @deprecated Use `IfcViewerAPI.clipper.createPlane()` instead.
    * Adds a clipping plane on the face pointed to by the cursor.
    */
   addClippingPlane = () => {
@@ -92,6 +69,7 @@ export class IfcViewerAPI {
   };
 
   /**
+   * @deprecated Use `IfcViewerAPI.clipper.deletePlane()` instead.
    * Removes the clipping plane pointed by the cursor.
    */
   removeClippingPlane = () => {
@@ -99,18 +77,19 @@ export class IfcViewerAPI {
   };
 
   /**
+   * @deprecated Use `IfcViewerAPI.clipper.toggle()` instead.
    * Turns on / off all clipping planes.
    */
   toggleClippingPlanes = () => {
-    this.clipper.active = !this.clipper.active;
+    this.clipper.toggle();
   };
 
   /**
+   * @deprecated Use `this.dropbox.loadDropboxIfc()` instead.
    * Opens a dropbox window where the user can select their IFC models.
    */
   openDropboxWindow() {
-    if (!this.dropbox) this.dropbox = new DropboxAPI(this.context, this.IFC);
-    this.dropbox?.loadDropboxIfc();
+    this.dropbox.loadDropboxIfc();
   }
 
   /**
@@ -121,6 +100,27 @@ export class IfcViewerAPI {
    */
   async loadIfc(file: File, fitToFrame = false) {
     await this.IFC.loadIfc(file, fitToFrame);
+  }
+
+  /**
+   * @deprecated Use `IfcViewerAPI.grid.setGrid()` instead.
+   * Adds a base [grid](https://threejs.org/docs/#api/en/helpers/GridHelper) to the scene.
+   * @size (optional) Size of the grid.
+   * @divisions (optional) Number of divisions in X and Y.
+   * @ColorCenterLine (optional) Color of the XY central lines of the grid.
+   * @colorGrid (optional) Color of the XY lines of the grid.
+   */
+  addGrid(size?: number, divisions?: number, colorCenterLine?: Color, colorGrid?: Color) {
+    this.grid.setGrid(size, divisions, colorCenterLine, colorGrid);
+  }
+
+  /**
+   * @deprecated Use `IfcViewerAPI.axes.setAxes()` instead.
+   * Adds base [axes](https://threejs.org/docs/#api/en/helpers/AxesHelper) to the scene.
+   * @size (optional) Size of the axes.
+   */
+  addAxes(size?: number) {
+    this.axes.setAxes(size);
   }
 
   /**
@@ -192,35 +192,68 @@ export class IfcViewerAPI {
   }
 
   /**
-   * @deprecated Use `IfcViewerAPI.IFC.prePickIfcItem()` instead.
+   * @deprecated Use `IfcViewerAPI.IFC.selector.prePickIfcItem()` instead.
    * Highlights the item pointed by the cursor.
    */
   prePickIfcItem = () => {
-    this.IFC.prePickIfcItem();
+    this.IFC.selector.prePickIfcItem();
   };
 
   /**
-   * @deprecated Use `IfcViewerAPI.IFC.pickIfcItem()` instead.
+   * @deprecated Use `IfcViewerAPI.IFC.selector.pickIfcItem()` instead.
    * Highlights the item pointed by the cursor and gets is properties.
    */
   pickIfcItem = () => {
-    return this.IFC.pickIfcItem();
+    return this.IFC.selector.pickIfcItem();
   };
 
   /**
-   * @deprecated Use `IfcViewerAPI.IFC.pickIfcItemsByID()` instead.
+   * @deprecated Use `IfcViewerAPI.IFC.selector.pickIfcItemsByID()` instead.
    * Highlights the item with the given ID.
    * @modelID ID of the IFC model.
    * @id Express ID of the item.
    */
   pickIfcItemsByID = (modelID: number, ids: number[]) => {
-    this.IFC.pickIfcItemsByID(modelID, ids);
+    this.IFC.selector.pickIfcItemsByID(modelID, ids);
   };
 
   /**
-   * TODO: Method to delete all data
-   * Needs to be implemented yet
+   * Releases all the memory allocated by IFC.js.
+   * Use this only when deleting the ifcViewerAPI instance.
+   * This is especially important when using libraries and frameworks that handle the lifecycle
+   * of objects automatically (e.g. React, Angular, etc). If you are using one of these and are
+   * instantiating webIfcViewer inside a component, make sure you use this method in the component
+   * destruction event.
    */
-  releaseAllMemory() {
+  async dispose() {
+    this.grid.dispose();
+    (this.grid as any) = null;
+    this.axes.dispose();
+    (this.axes as any) = null;
+    this.context.dispose();
+    (this.context as any) = null;
+    this.clipper.dispose();
+    (this.clipper as any) = null;
+    this.plans.dispose();
+    (this.plans as any) = null;
+    this.filler.dispose();
+    (this.filler as any) = null;
+    this.dimensions.dispose();
+    (this.dimensions as any) = null;
+    this.edges.dispose();
+    (this.edges as any) = null;
+    this.shadowDropper.dispose();
+    (this.shadowDropper as any) = null;
+    this.dxf.dispose();
+    (this.dxf as any) = null;
+    this.pdf.dispose();
+    (this.pdf as any) = null;
+    this.edgesProjector.dispose();
+    (this.edgesProjector as any) = null;
+    (this.dropbox as any) = null;
+    this.GLTF.dispose();
+    (this.GLTF as any) = null;
+    await this.IFC.dispose();
+    (this.IFC as any) = null;
   }
 }

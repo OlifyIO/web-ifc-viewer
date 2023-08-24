@@ -25,6 +25,11 @@ export class IfcUnits {
     this.ifc = ifc;
   }
 
+  dispose() {
+    (this.allUnits as any) = null;
+    (this.ifc as any) = null;
+  }
+
   async getUnits(modelID: number, type: UnitType) {
     if (!this.allUnits[modelID]) {
       await this.getUnitsOfModel(modelID);
@@ -45,7 +50,7 @@ export class IfcUnits {
       if (foundUnit) {
         const prefix = foundUnit.Prefix as any;
         let scale;
-        if (!prefix) scale = UnitScale.NONE;
+        if (prefix === null || prefix === undefined) scale = UnitScale.NONE;
         else scale = UnitScale[prefix.value];
         this.allUnits[modelID][value] = scale;
       }

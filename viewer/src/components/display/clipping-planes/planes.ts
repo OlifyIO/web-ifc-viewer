@@ -9,18 +9,13 @@ import {
   Vector3
 } from 'three';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
-import { Context, IfcComponent } from '../../../base-types';
+import { IfcComponent } from '../../../base-types';
 import { ClippingEdges } from './clipping-edges';
-import { IfcManager } from '../../ifc';
+import { IfcContext } from '../../context';
 
 export class IfcPlane extends IfcComponent {
-  static planeMaterial = new MeshBasicMaterial({
-    color: 0xffff00,
-    side: DoubleSide,
-    transparent: true,
-    opacity: 0.2
-  });
-  private static hiddenMaterial = new MeshBasicMaterial({ visible: false });
+  static planeMaterial = IfcPlane.getPlaneMaterial();
+  private static hiddenMaterial = IfcPlane.getHiddenMaterial();
   readonly arrowBoundingBox = new Mesh();
   readonly plane: Plane;
   readonly planeMesh: Mesh;
@@ -39,11 +34,10 @@ export class IfcPlane extends IfcComponent {
   readonly helper: Object3D;
 
   private readonly planeSize: number;
-  private readonly context: Context;
+  private readonly context: IfcContext;
 
   constructor(
-    context: Context,
-    ifc: IfcManager,
+    context: IfcContext,
     origin: Vector3,
     normal: Vector3,
     onStartDragging: Function,
@@ -63,7 +57,7 @@ export class IfcPlane extends IfcComponent {
     this.setupEvents(onStartDragging, onEndDragging);
     this.plane.setFromNormalAndCoplanarPoint(normal, origin);
 
-    this.edges = new ClippingEdges(this.context, this.plane, ifc);
+    this.edges = new ClippingEdges(this.plane);
     this.edgesActive = edgesEnabled;
   }
 
@@ -94,22 +88,52 @@ export class IfcPlane extends IfcComponent {
     this.edges.visible = state;
   }
 
+  dispose() {
+    if (IfcPlane.planeMaterial) {
+      IfcPlane.planeMaterial.dispose();
+      (IfcPlane.planeMaterial as any) = null;
+      IfcPlane.planeMaterial = IfcPlane.getPlaneMaterial();
+    }
+    if (IfcPlane.hiddenMaterial) {
+      IfcPlane.hiddenMaterial.dispose();
+      (IfcPlane.hiddenMaterial as any) = null;
+      IfcPlane.hiddenMaterial = IfcPlane.getHiddenMaterial();
+    }
+    this.removeFromScene();
+    this.edges.disposeStylesAndHelpers();
+    (this.edges as any) = null;
+    (this.context as any) = null;
+  }
+
   removeFromScene = () => {
     this.helper.removeFromParent();
 
     this.arrowBoundingBox.removeFromParent();
     this.arrowBoundingBox.geometry.dispose();
-    // @ts-ignore
-    this.arrowBoundingBox.geometry = undefined;
+    (this.arrowBoundingBox as any) = undefined;
 
     this.planeMesh.geometry.dispose();
-    // @ts-ignore
-    this.planeMesh.geometry = undefined;
+    (this.planeMesh.geometry as any) = undefined;
 
     this.controls.removeFromParent();
     this.controls.dispose();
-    this.edges.remove();
+    this.edges.dispose();
+
+    this.helper.removeFromParent();
   };
+
+  private static getPlaneMaterial() {
+    return new MeshBasicMaterial({
+      color: 0xffff00,
+      side: DoubleSide,
+      transparent: true,
+      opacity: 0.2
+    });
+  }
+
+  private static getHiddenMaterial() {
+    return new MeshBasicMaterial({ visible: false });
+  }
 
   private newTransformControls() {
     const camera = this.context.getCamera();
@@ -118,6 +142,7 @@ export class IfcPlane extends IfcComponent {
     this.initializeControls(controls);
     const scene = this.context.getScene();
     scene.add(controls);
+    this.context.renderer.postProduction.excludedItems.add(controls);
     return controls;
   }
 
@@ -165,6 +190,7 @@ export class IfcPlane extends IfcComponent {
     const scene = this.context.getScene();
     scene.add(helper);
     helper.add(this.planeMesh);
+    this.context.renderer.postProduction.excludedItems.add(helper);
     return helper;
   }
 

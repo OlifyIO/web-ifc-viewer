@@ -1,8 +1,10 @@
 {
   "name": "@olifyio/web-ifc-viewer-root",
   "description": "IFC viewer",
-  "version": "1.0.118",
+  "version": "1.0.218",
   "private": true,
+  "type": "module",
+  "main": "viewer/src/ifc-viewer-api.ts",
   "author": "agviegas",
   "license": "MIT",
   "repository": {

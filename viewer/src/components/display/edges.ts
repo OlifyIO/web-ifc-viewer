@@ -1,6 +1,7 @@
-import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
-import { EdgesGeometry, LineSegments, Material } from 'three';
-import { Context } from '../../base-types';
+import { LineSegments, EdgesGeometry, Material, Mesh } from 'three';
+import { Subset } from 'web-ifc-three/IFC/components/subsets/SubsetManager';
+import { IfcContext } from '../context';
+import { disposeMeshRecursively } from '../../utils/ThreeUtils';
 
 export class Edges {
   threshold = 30;
@@ -9,12 +10,12 @@ export class Edges {
       edges: LineSegments;
       originalMaterials: Material | Material[];
       baseMaterial: Material | undefined;
-      model: IFCModel;
+      model: Mesh;
       active: boolean;
     };
   };
 
-  constructor(private context: Context) {
+  constructor(private context: IfcContext) {
     this.edges = {};
   }
 
@@ -22,6 +23,18 @@ export class Edges {
     material.polygonOffset = true;
     material.polygonOffsetFactor = 1;
     material.polygonOffsetUnits = 1;
+  }
+
+  dispose() {
+    const allEdges = Object.values(this.edges);
+    allEdges.forEach((item) => {
+      disposeMeshRecursively(item.edges as any);
+      if (Array.isArray(item.originalMaterials)) {
+        item.originalMaterials.forEach((mat) => mat.dispose());
+      } else item.originalMaterials.dispose();
+      if (item.baseMaterial) item.baseMaterial.dispose();
+    });
+    (this.edges as any) = null;
   }
 
   getAll() {
@@ -32,23 +45,29 @@ export class Edges {
     return this.edges[name];
   }
 
-  // TODO: Implement ids to create filtered edges / edges by floor plan
   create(name: string, modelID: number, lineMaterial: Material, material?: Material) {
-    const model = this.context.items.ifcModels.find(
-      (model) => model.modelID === modelID
-    ) as IFCModel;
+    const model = this.context.items.ifcModels.find((model) => model.modelID === modelID);
     if (!model) return;
+    this.createFromMesh(name, model, lineMaterial, material);
+  }
+
+  // use this to create edges of a subset this implements a todo of allowing subsets of edges
+  createFromSubset(name: string, subset: Subset, lineMaterial: Material, material?: Material) {
+    this.createFromMesh(name, subset, lineMaterial, material);
+  }
+
+  createFromMesh(name: string, mesh: Mesh, lineMaterial: Material, material?: Material) {
     const planes = this.context.getClippingPlanes();
     lineMaterial.clippingPlanes = planes;
     if (material) material.clippingPlanes = planes;
-    this.setupModelMaterials(model);
-    const geo = new EdgesGeometry(model.geometry, this.threshold);
+    this.setupModelMaterials(mesh);
+    const geo = new EdgesGeometry(mesh.geometry, this.threshold);
     lineMaterial.clippingPlanes = this.context.getClippingPlanes();
     this.edges[name] = {
       edges: new LineSegments(geo, lineMaterial),
-      originalMaterials: model.material,
+      originalMaterials: mesh.material,
       baseMaterial: material,
-      model,
+      model: mesh,
       active: false
     };
   }
@@ -71,7 +90,7 @@ export class Edges {
     selected.edges.removeFromParent();
   }
 
-  private setupModelMaterials(model: IFCModel) {
+  private setupModelMaterials(model: Mesh) {
     if (Array.isArray(model.material)) {
       model.material.forEach((mat) => Edges.setupModelMaterial(mat));
       return;

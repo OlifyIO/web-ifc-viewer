@@ -18,7 +18,6 @@ import {
 } from 'three';
 import {
   CameraProjections,
-  Context,
   IfcComponent,
   NavigationMode,
   NavigationModes,
@@ -29,6 +28,7 @@ import { FirstPersonControl } from './controls/first-person-control';
 import { OrbitControl } from './controls/orbit-control';
 import { PlanControl } from './controls/plan-control';
 import { ProjectionManager } from './projection-manager';
+import { IfcContext } from '../context';
 
 const subsetOfTHREE = {
   MOUSE,
@@ -57,18 +57,21 @@ export class IfcCamera extends IfcComponent {
   navMode: NavModeManager;
   currentNavMode: NavigationMode;
 
-  public readonly onChange = new LiteEvent<any>();
-  public readonly onChangeProjection = new LiteEvent<Camera>();
-  private readonly context: Context;
+  readonly onChange = new LiteEvent<any>();
+  readonly onChangeProjection = new LiteEvent<Camera>();
+
+  private readonly context: IfcContext;
   private readonly projectionManager: ProjectionManager;
 
-  constructor(context: Context) {
+  private previousUserInput: any = {};
+
+  constructor(context: IfcContext) {
     super(context);
     this.context = context;
 
     const dims = this.context.getDimensions();
     const aspect = dims.x / dims.y;
-    this.perspectiveCamera = new PerspectiveCamera(45, aspect, 0.1, 1000);
+    this.perspectiveCamera = new PerspectiveCamera(45, aspect, 1, 2000);
 
     this.orthographicCamera = new OrthographicCamera(
       (frustumSize * aspect) / -2,
@@ -101,12 +104,25 @@ export class IfcCamera extends IfcComponent {
     this.setupControls();
   }
 
+  dispose() {
+    this.perspectiveCamera.removeFromParent();
+    (this.perspectiveCamera as any) = null;
+    this.orthographicCamera.removeFromParent();
+    (this.orthographicCamera as any) = null;
+    this.cameraControls.dispose();
+    (this.cameraControls as any) = null;
+    (this.navMode as any) = null;
+    (this.context as any) = null;
+    (this.projectionManager as any) = null;
+  }
+
   get projection() {
     return this.projectionManager.projection;
   }
 
   set projection(projection: CameraProjections) {
     this.projectionManager.projection = projection;
+    this.onChangeProjection.trigger(this.activeCamera);
   }
 
   /**
@@ -122,11 +138,13 @@ export class IfcCamera extends IfcComponent {
 
   update(_delta: number) {
     super.update(_delta);
+    if (this.cameraControls.enabled) {
     this.cameraControls.update(_delta);
   }
+  }
 
-  updateAspect() {
-    const dims = this.context.getDimensions();
+  updateAspect(dims?: Vector2) {
+    if (!dims) dims = this.context.getDimensions();
     this.perspectiveCamera.aspect = dims.x / dims.y;
     this.perspectiveCamera.updateProjectionMatrix();
     this.setOrthoCameraAspect(dims);
@@ -163,6 +181,27 @@ export class IfcCamera extends IfcComponent {
     }
   }
 
+  toggleUserInput(active: boolean) {
+    console.log(this.previousUserInput);
+    if (active) {
+      if (Object.keys(this.previousUserInput).length === 0) return;
+      this.cameraControls.mouseButtons.left = this.previousUserInput.left;
+      this.cameraControls.mouseButtons.right = this.previousUserInput.right;
+      this.cameraControls.mouseButtons.middle = this.previousUserInput.middle;
+      this.cameraControls.mouseButtons.wheel = this.previousUserInput.wheel;
+    } else {
+      this.previousUserInput.left = this.cameraControls.mouseButtons.left;
+      this.previousUserInput.right = this.cameraControls.mouseButtons.right;
+      this.previousUserInput.middle = this.cameraControls.mouseButtons.middle;
+      this.previousUserInput.wheel = this.cameraControls.mouseButtons.wheel;
+
+      this.cameraControls.mouseButtons.left = 0;
+      this.cameraControls.mouseButtons.right = 0;
+      this.cameraControls.mouseButtons.middle = 0;
+      this.cameraControls.mouseButtons.wheel = 0;
+    }
+  }
+
   private setOrthoCameraAspect(dims: Vector2) {
     const aspect = dims.x / dims.y;
     this.orthographicCamera.left = (-frustumSize * aspect) / 2;
@@ -179,7 +218,6 @@ export class IfcCamera extends IfcComponent {
 
   private setupCameras() {
     this.setCameraPositionAndTarget(this.perspectiveCamera);
-    this.setCameraPositionAndTarget(this.perspectiveCamera);
   }
 
   private setCameraPositionAndTarget(camera: Camera) {
@@ -190,9 +228,12 @@ export class IfcCamera extends IfcComponent {
   }
 
   private setupControls() {
-    this.cameraControls.dampingFactor = 0.1;
+    this.cameraControls.dampingFactor = 0.2;
     this.cameraControls.dollyToCursor = true;
     this.cameraControls.infinityDolly = true;
     this.cameraControls.setTarget(0, 0, 0);
+
+    this.cameraControls.addEventListener('controlend', () => this.onChange.trigger(this));
+    this.cameraControls.addEventListener('rest', () => this.onChange.trigger(this));
   }
 }

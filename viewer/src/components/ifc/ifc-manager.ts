@@ -1,39 +1,45 @@
 // @ts-ignore
-import { IfcMesh, IfcModel } from '@olifyio/web-ifc-three/IFC/BaseDefinitions';
-import { IFCLoader } from '@olifyio/web-ifc-three/IFCLoader';
-import { DoubleSide, Material, Matrix4, MeshLambertMaterial } from 'three';
-import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+import { Matrix4 } from 'three';
+import { IFCLoader } from 'web-ifc-three/IFCLoader';
 import { LoaderSettings } from 'web-ifc';
-import { Context, IfcComponent } from '../../base-types';
-import { IfcSelection } from './selection';
+import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
+import { IfcComponent } from '../../base-types';
 import { IfcUnits } from './units';
-import { VisibilityManager } from './visibility-manager';
+import { IfcSelector } from './selection/selector';
+import { IfcContext } from '../context';
+import { IfcProperties } from './ifc-properties';
+import { ShadowDropper } from '../display/shadow-dropper';
 
 export class IfcManager extends IfcComponent {
   loader: IFCLoader;
-  visibility: VisibilityManager;
-  preselection: IfcSelection;
-  selection: IfcSelection;
-  highlight: IfcSelection;
+  selector: IfcSelector;
   units: IfcUnits;
-  private readonly context: Context;
-  private readonly defPreselectMat: Material;
-  private readonly defSelectMat: Material;
-  private readonly defHighlightMat: Material;
+  properties: IfcProperties;
+  shadowDropper: ShadowDropper;
+  private readonly context: IfcContext;
 
-  constructor(context: Context) {
+  constructor(context: IfcContext) {
     super(context);
     this.context = context;
     this.loader = new IFCLoader();
     this.setupThreeMeshBVH();
-    this.visibility = new VisibilityManager(this.loader, this.context);
-    this.defSelectMat = this.initializeDefMaterial(0xff33ff, 0.3);
-    this.defPreselectMat = this.initializeDefMaterial(0xffccff, 0.5);
-    this.defHighlightMat = this.initializeDefMaterial(0xffccff, 0.5);
-    this.preselection = new IfcSelection(context, this.loader, this.defPreselectMat);
-    this.selection = new IfcSelection(context, this.loader, this.defSelectMat);
-    this.highlight = new IfcSelection(context, this.loader, this.defHighlightMat);
+    this.selector = new IfcSelector(context, this);
     this.units = new IfcUnits(this);
+    this.properties = new IfcProperties(context, this.loader);
+    this.shadowDropper = new ShadowDropper(this.context, this);
+  }
+
+  async dispose() {
+    (this.context as any) = null;
+    this.selector.dispose();
+    (this.selector as any) = null;
+    this.units.dispose();
+    (this.units as any) = null;
+    this.properties.dispose();
+    (this.properties as any) = null;
+    await this.loader.ifcManager.dispose();
+    (this.loader as any) = null;
   }
 
   /**
@@ -65,16 +71,17 @@ export class IfcManager extends IfcComponent {
 
       const settings = this.loader.ifcManager.state.webIfcSettings;
       const fastBools = settings?.USE_FAST_BOOLS || true;
+      const coordsToOrigin = settings?.COORDINATE_TO_ORIGIN || false;
 
       await this.loader.ifcManager.applyWebIfcConfig({
-        COORDINATE_TO_ORIGIN: firstModel,
+        COORDINATE_TO_ORIGIN: firstModel && coordsToOrigin,
         USE_FAST_BOOLS: fastBools
       });
 
-      const ifcModel = (await this.loader.loadAsync(url, onProgress)) as IfcModel;
-      this.addIfcModel(ifcModel.mesh);
+      const ifcModel = await this.loader.loadAsync(url, onProgress);
+      this.addIfcModel(ifcModel);
 
-      if (firstModel) {
+      if (firstModel && coordsToOrigin) {
         const matrixArr = await this.loader.ifcManager.ifcAPI.GetCoordinationMatrix(
           ifcModel.modelID
         );
@@ -107,15 +114,15 @@ export class IfcManager extends IfcComponent {
    *
    * @path Relative path to web-ifc.wasm.
    */
-  setWasmPath(path: string) {
-    this.loader.ifcManager.setWasmPath(path);
+  async setWasmPath(path: string) {
+    await this.loader.ifcManager.setWasmPath(path);
   }
 
   /**
    * Applies a configuration for [web-ifc](https://ifcjs.github.io/info/docs/Guide/web-ifc/Introduction).
    */
-  applyWebIfcConfig(settings: LoaderSettings) {
-    this.loader.ifcManager.applyWebIfcConfig(settings);
+  async applyWebIfcConfig(settings: LoaderSettings) {
+    await this.loader.ifcManager.applyWebIfcConfig(settings as any);
   }
 
   /**
@@ -150,7 +157,7 @@ export class IfcManager extends IfcComponent {
   getModelID() {
     const found = this.context.castRayIfc();
     if (!found) return null;
-    const mesh = found.object as IfcMesh;
+    const mesh = found.object as IFCModel;
     if (!mesh || mesh.modelID === undefined || mesh.modelID === null) return null;
     return mesh.modelID;
   }
@@ -166,71 +173,86 @@ export class IfcManager extends IfcComponent {
   }
 
   /**
-   * Highlights the item pointed by the cursor.
+   * @deprecated: use IFC.selector.prePickIfcItem() instead.
    */
-  prePickIfcItem = () => {
-    const found = this.context.castRayIfc();
-    if (!found) {
-      this.preselection.hideSelection();
-      return;
-    }
-    this.preselection.pick(found);
-  };
+  async prePickIfcItem() {
+    await this.selector.prePickIfcItem();
+  }
 
   /**
-   * Highlights the item pointed by the cursor and gets is properties.
-   * @focusSelection If true, animate the perspectiveCamera to focus the current selection
+   * @deprecated: use IFC.selector.pickIfcItem() instead.
    */
-  pickIfcItem = async (focusSelection = false) => {
-    const found = this.context.castRayIfc();
-    if (!found) return null;
-    const result = await this.selection.pick(found, focusSelection);
-    if (result == null || result.modelID == null || result.id == null) return null;
-    return result;
-  };
+  async pickIfcItem(focusSelection = false) {
+    return this.selector.pickIfcItem(focusSelection);
+  }
 
   /**
-   * Highlights the item pointed by the cursor and gets is properties, without applying any material to it.
-   * @focusSelection If true, animate the perspectiveCamera to focus the current selection
+   * @deprecated: use IFC.selector.highlightIfcItem() instead.
    */
-  highlightIfcItem = async (focusSelection = false) => {
-    const found = this.context.castRayIfc();
-    if (!found) return null;
-    const result = await this.highlight.pick(found, focusSelection);
-    if (result == null || result.modelID == null || result.id == null) return null;
-    return result;
-  };
+  async highlightIfcItem(focusSelection = false) {
+    return this.selector.highlightIfcItem(focusSelection);
+  }
 
   /**
-   * Highlights the item with the given ID.
+   * @deprecated: use IFC.selector.pickIfcItemsByID() instead.
+   */
+  async pickIfcItemsByID(modelID: number, ids: number[], focusSelection = false) {
+    await this.selector.pickIfcItemsByID(modelID, ids, focusSelection);
+  }
+
+  /**
+   * @deprecated: use IFC.selector.prepickIfcItemsByID() instead.
+   */
+  async prepickIfcItemsByID(modelID: number, ids: number[], focusSelection = false) {
+    await this.selector.prepickIfcItemsByID(modelID, ids, focusSelection);
+  }
+
+  /**
+   * @deprecated: use IFC.selector.highlightIfcItemsByID() instead.
+   */
+  async highlightIfcItemsByID(modelID: number, ids: number[], focusSelection = false) {
+    await this.selector.highlightIfcItemsByID(modelID, ids, focusSelection);
+  }
+
+  /**
+   * @deprecated: use IFC.selector.unpickIfcItems() instead.
+   */
+  unpickIfcItems() {
+    this.selector.unpickIfcItems();
+  }
+
+  /**
+   * @deprecated: use IFC.selector.unPrepickIfcItems() instead.
+   */
+  unPrepickIfcItems() {
+    this.selector.unPrepickIfcItems();
+  }
+
+  /**
+   * @deprecated: use IFC.selector.unHighlightIfcItems() instead.
+   */
+  unHighlightIfcItems() {
+    this.selector.unHighlightIfcItems();
+  }
+
+  /**
+   * Remove & dispose ifcmodel
    * @modelID ID of the IFC model.
-   * @id Express ID of the item.
    */
-  pickIfcItemsByID = (modelID: number, ids: number[], focusSelection = false) => {
-    this.selection.pickByID(modelID, ids, focusSelection);
-  };
+  removeIfcModel(modelID: number): void {
+    try {
+      this.context.items.ifcModels.splice(modelID, 1);
+      this.context.items.pickableIfcModels.splice(modelID, 1);
+      this.shadowDropper.deleteShadow(modelID.toString());
 
-  prepickIfcItemsByID = (modelID: number, ids: number[], focusSelection = false) => {
-    this.preselection.pickByID(modelID, ids, focusSelection);
-  };
+      const scene = this.context.getScene();
+      this.loader.ifcManager.close(modelID, scene);
+    } catch (e) {
+      console.log(`Removing IfcModel ${modelID} failed`);
+    }
+  }
 
-  highlightIfcItemsByID = (modelID: number, ids: number[], focusSelection = false) => {
-    this.highlight.pickByID(modelID, ids, focusSelection);
-  };
-
-  unpickIfcItems = () => {
-    this.selection.unpick();
-  };
-
-  unPrepickIfcItems = () => {
-    this.preselection.unpick();
-  };
-
-  unHighlightIfcItems = () => {
-    this.highlight.unpick();
-  };
-
-  private addIfcModel(ifcMesh: IfcMesh) {
+  private addIfcModel(ifcMesh: IFCModel) {
     this.context.items.ifcModels.push(ifcMesh);
     this.context.items.pickableIfcModels.push(ifcMesh);
     this.context.getScene().add(ifcMesh);
@@ -242,17 +264,5 @@ export class IfcManager extends IfcComponent {
       disposeBoundsTree,
       acceleratedRaycast
     );
-  }
-
-  private initializeDefMaterial(color: number, opacity: number) {
-    const planes = this.context.getClippingPlanes();
-    return new MeshLambertMaterial({
-      color,
-      opacity,
-      transparent: true,
-      depthTest: false,
-      side: DoubleSide,
-      clippingPlanes: planes
-    });
   }
 }

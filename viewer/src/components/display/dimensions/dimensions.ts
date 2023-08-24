@@ -6,14 +6,16 @@ import {
   LineDashedMaterial,
   Mesh,
   MeshBasicMaterial,
+  Object3D,
   Vector3
 } from 'three';
 import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer';
-import { Context, IfcComponent } from '../../../base-types';
+import { IfcComponent } from '../../../base-types';
 import { IfcDimensionLine } from './dimension-line';
+import { IfcContext } from '../../context';
 
 export class IfcDimensions extends IfcComponent {
-  private readonly context: Context;
+  private readonly context: IfcContext;
   private dimensions: IfcDimensionLine[] = [];
   private currentDimension?: IfcDimensionLine;
   readonly labelClassName = 'ifcjs-dimension-label';
@@ -26,13 +28,12 @@ export class IfcDimensions extends IfcComponent {
   snapDistance = 0.25;
 
   // Measures
-  private arrowHeight = 0.2;
-  private arrowRadius = 0.05;
+
   private baseScale = new Vector3(1, 1, 1);
 
   // Geometries
-  private readonly endpoint: BufferGeometry;
-  private readonly previewElement: CSS2DObject;
+  private endpoint: BufferGeometry;
+  private previewElement: CSS2DObject;
 
   // Materials
   private lineMaterial = new LineDashedMaterial({
@@ -49,14 +50,27 @@ export class IfcDimensions extends IfcComponent {
   private startPoint = new Vector3();
   private endPoint = new Vector3();
 
-  constructor(context: Context) {
+  constructor(context: IfcContext) {
     super(context);
     this.context = context;
-    this.endpoint = this.getDefaultEndpointGeometry();
+    this.endpoint = IfcDimensions.getDefaultEndpointGeometry();
     const htmlPreview = document.createElement('div');
     htmlPreview.className = this.previewClassName;
     this.previewElement = new CSS2DObject(htmlPreview);
     this.previewElement.visible = false;
+  }
+
+  dispose() {
+    (this.context as any) = null;
+    this.dimensions.forEach((dim) => dim.dispose());
+    (this.dimensions as any) = null;
+    (this.currentDimension as any) = null;
+    this.endpoint.dispose();
+    (this.endpoint as any) = null;
+
+    this.previewElement.removeFromParent();
+    this.previewElement.element.remove();
+    (this.previewElement as any) = null;
   }
 
   update(_delta: number) {
@@ -73,6 +87,15 @@ export class IfcDimensions extends IfcComponent {
         this.drawInProcess();
       }
     }
+  }
+
+  // TODO: This causes a memory leak, and it's a bit confusing
+  setArrow(height: number, radius: number) {
+    this.endpoint = IfcDimensions.getDefaultEndpointGeometry(height, radius);
+  }
+
+  setPreviewElement(element: HTMLElement) {
+    this.previewElement = new CSS2DObject(element);
   }
 
   get active() {
@@ -139,6 +162,15 @@ export class IfcDimensions extends IfcComponent {
     this.drawEnd();
   }
 
+  createInPlane(plane: Object3D) {
+    if (!this.enabled) return;
+    if (!this.dragging) {
+      this.drawStartInPlane(plane);
+      return;
+    }
+    this.drawEnd();
+  }
+
   delete() {
     if (!this.enabled || this.dimensions.length === 0) return;
     const boundingBoxes = this.getBoundingBoxes();
@@ -165,6 +197,17 @@ export class IfcDimensions extends IfcComponent {
     this.currentDimension = undefined;
   }
 
+  setDimensionUnit(units: string) {
+    if (!units) return;
+    if (units === "mm") {
+      IfcDimensionLine.units = units;
+      IfcDimensionLine.scale = 1000;
+    } else if (units === "m") {
+      IfcDimensionLine.units = units;
+      IfcDimensionLine.scale = 1;
+    }
+  }
+
   private drawStart() {
     this.dragging = true;
     const intersects = this.context.castRayIfc();
@@ -172,6 +215,14 @@ export class IfcDimensions extends IfcComponent {
     const found = this.getClosestVertex(intersects);
     if (!found) return;
     this.startPoint = found;
+  }
+
+  private drawStartInPlane(plane: Object3D) {
+    this.dragging = true;
+
+    const intersects = this.context.castRay([plane]);
+    if (!intersects || intersects.length < 1) return;
+    this.startPoint = intersects[0].point;
   }
 
   private drawInProcess() {
@@ -190,6 +241,10 @@ export class IfcDimensions extends IfcComponent {
     this.dimensions.push(this.currentDimension);
     this.currentDimension = undefined;
     this.dragging = false;
+  }
+
+  get getDimensionsLines() {
+    return this.dimensions;
   }
 
   private drawDimension() {
@@ -211,9 +266,9 @@ export class IfcDimensions extends IfcComponent {
       .filter((box) => box !== undefined) as Mesh[];
   }
 
-  private getDefaultEndpointGeometry() {
-    const coneGeometry = new ConeGeometry(this.arrowRadius, this.arrowHeight);
-    coneGeometry.translate(0, -this.arrowHeight / 2, 0);
+  private static getDefaultEndpointGeometry(height = 0.1, radius = 0.03) {
+    const coneGeometry = new ConeGeometry(radius, height);
+    coneGeometry.translate(0, -height / 2, 0);
     coneGeometry.rotateX(-Math.PI / 2);
     return coneGeometry;
   }

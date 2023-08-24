@@ -1,27 +1,34 @@
 import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
 import { BackSide, Material } from 'three';
-import { Context } from '../../base-types';
 import { IfcManager } from '../ifc';
+import { IfcContext } from '../context';
+import { disposeMeshRecursively } from '../../utils/ThreeUtils';
 
 export class SectionFillManager {
-  private readonly fills: { [name: string]: IFCModel };
+  readonly fills: { [name: string]: IFCModel };
 
-  constructor(private IFC: IfcManager, private context: Context) {
+  private existMessage = 'The specified fill already exists';
+
+  constructor(private IFC: IfcManager, private context: IfcContext) {
     this.fills = {};
   }
 
-  get(name: string) {
-    return this.fills[name];
+  dispose() {
+    const fills = Object.values(this.fills);
+    fills.forEach((fill) => disposeMeshRecursively(fill));
+    (this.fills as any) = null;
   }
 
   create(name: string, modelID: number, ids: number[], material: Material) {
-    if (this.fills[name] !== undefined) throw new Error('The specified fill already exists');
+    if (this.fills[name] !== undefined) throw new Error(this.existMessage);
     material.clippingPlanes = this.context.getClippingPlanes();
     const model = this.context.items.ifcModels.find((model) => model.modelID === modelID);
     if (!model) throw new Error('The requested model to fill was not found.');
+
     this.setupMaterial(material);
     const subset = this.getSubset(modelID, ids, material, name);
     if (!subset) return null;
+    this.context.items.pickableIfcModels.push(subset);
 
     subset.position.copy(model.position);
     subset.rotation.copy(model.rotation);
@@ -29,6 +36,19 @@ export class SectionFillManager {
     this.fills[name] = subset;
     // subset.renderOrder = 2;
     return subset;
+  }
+
+  createFromMesh(name: string, mesh: IFCModel) {
+    if (this.fills[name] !== undefined) throw new Error(this.existMessage);
+    const planes = this.context.getClippingPlanes();
+    if (Array.isArray(mesh.material)) {
+      mesh.material.forEach((material) => {
+        material.clippingPlanes = planes;
+      });
+    } else {
+      mesh.material.clippingPlanes = planes;
+    }
+    this.fills[name] = mesh;
   }
 
   delete(name: string) {
@@ -53,6 +73,7 @@ export class SectionFillManager {
       scene: this.context.getScene(),
       removePrevious: true,
       material,
+      applyBVH: true,
       customID: name
     }) as IFCModel;
   }

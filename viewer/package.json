@@ -1,8 +1,10 @@
 {
+  "version": "1.0.117",
   "name": "@olifyio/web-ifc-viewer",
-  "version": "1.0.118",
+  "version": "1.0.218",
   "description": "IFC viewer",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "watch": "tsc -w",
     "build": "tsc",
@@ -30,9 +32,8 @@
     "camera-controls": "^1.33.1",
     "dat.gui": "^0.7.7",
     "gsap": "^3.7.1",
-    "postprocessing": "^6.23.1",
-    "three-mesh-bvh": "^0.5.2",
-    "web-ifc": "^0.0.32",
+    "three-mesh-bvh": "^0.5.11",
+    "web-ifc": "^0.0.39",
     "@olifyio/web-ifc-three": "0.0.100"
   },
   "devDependencies": {
