@@ -1,6 +1,4 @@
-import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry';
-import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial';
+import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
 import {
   BufferAttribute,
   BufferGeometry,
@@ -13,6 +11,9 @@ import {
   Plane,
   Vector3
 } from 'three';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial';
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry';
 import {
   IFCBEAM,
   IFCBUILDINGELEMENTPROXY,
@@ -30,9 +31,8 @@ import {
   IFCWALLSTANDARDCASE,
   IFCWINDOW
 } from 'web-ifc';
-import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
-import { IfcManager } from '../../ifc';
 import { IfcContext } from '../../context';
+import { IfcManager } from '../../ifc';
 
 export interface Style {
   ids: number[];

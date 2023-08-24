@@ -1,12 +1,12 @@
 import { Clock, Mesh, Object3D, Plane, Vector2, Vector3 } from 'three';
+import { IfcComponent, Items, NavigationModes, ViewerOptions } from '../../base-types';
 import { Animator } from './animator';
 import { IfcCamera } from './camera/camera';
 import { IfcEvent, IfcEvents } from './ifcEvent';
+import { IfcMouse } from './mouse';
 import { IfcRaycaster } from './raycaster';
 import { IfcRenderer } from './renderer/renderer';
 import { IfcScene } from './scene';
-import { IfcComponent, Items, NavigationModes, ViewerOptions } from '../../base-types';
-import { IfcMouse } from './mouse';
 
 export class IfcContext {
   options: ViewerOptions;

@@ -1,16 +1,16 @@
+import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
 import {
-  Float32BufferAttribute,
-  Line,
-  Line3,
-  MathUtils,
-  Matrix4,
-  MeshBasicMaterial,
-  PerspectiveCamera,
-  Vector2
+    Float32BufferAttribute,
+    Line,
+    Line3,
+    MathUtils,
+    Matrix4,
+    MeshBasicMaterial,
+    PerspectiveCamera,
+    Vector2
 } from 'three';
-import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
-import { ShapeCaster } from './shape-caster';
 import { IfcContext } from '../context';
+import { ShapeCaster } from './shape-caster';
 
 export enum SelectionWindowMode {
   lasso,

@@ -1,4 +1,4 @@
-import { IFCLoader } from 'web-ifc-three/IFCLoader';
+import { IFCLoader } from '@olifyio/web-ifc-three/IFCLoader';
 import { IFCBUILDING, IFCBUILDINGSTOREY, IFCUNITASSIGNMENT } from 'web-ifc';
 
 export class StoreyManager {

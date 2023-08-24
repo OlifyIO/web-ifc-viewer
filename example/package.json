@@ -26,7 +26,7 @@
     "dxf-writer": "^1.15.1",
     "jspdf": "^2.4.0",
     "stats.js": "0.17.0",
-    "three": "0.135",
+    "three": "^0.155.0",
     "three-mesh-bvh": "^0.5.11",
     "web-ifc": "^0.0.39",
     "web-ifc-viewer": "1.0.218"

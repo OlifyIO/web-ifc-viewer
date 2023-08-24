@@ -1,6 +1,6 @@
-import { IFCLoader } from 'web-ifc-three/IFCLoader';
-import { WebIfcAPI } from 'web-ifc-three/IFC/BaseDefinitions';
-import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
+import { WebIfcAPI } from '@olifyio/web-ifc-three/IFC/BaseDefinitions';
+import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
+import { IFCLoader } from '@olifyio/web-ifc-three/IFCLoader';
 import { IFCBUILDING } from 'web-ifc';
 import { IfcContext } from '../context';
 import { geometryTypes } from './geometry-types';

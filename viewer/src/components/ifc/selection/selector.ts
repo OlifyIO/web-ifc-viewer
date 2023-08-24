@@ -1,8 +1,8 @@
+import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
 import { DoubleSide, Material, Mesh, MeshLambertMaterial } from 'three';
-import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
-import { IfcSelection } from './selection';
-import { IfcManager } from '../ifc-manager';
 import { IfcContext } from '../../context';
+import { IfcManager } from '../ifc-manager';
+import { IfcSelection } from './selection';
 
 export class IfcSelector {
   preselection: IfcSelection;

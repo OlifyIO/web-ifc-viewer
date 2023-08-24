@@ -1,4 +1,6 @@
-import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { IFCManager } from '@olifyio/web-ifc-three/IFC/components/IFCManager';
+import { IFCModel } from '@olifyio/web-ifc-three/IFC/components/IFCModel';
+import { IFCLoader } from '@olifyio/web-ifc-three/IFCLoader';
 import {
   BufferAttribute,
   BufferGeometry,
@@ -9,16 +11,14 @@ import {
   MeshLambertMaterial,
   MeshStandardMaterial
 } from 'three';
-import { IFCModel } from 'web-ifc-three/IFC/components/IFCModel';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
-import { IFCLoader } from 'web-ifc-three/IFCLoader';
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { IFCPROJECT } from 'web-ifc';
-import { IFCManager } from 'web-ifc-three/IFC/components/IFCManager';
 import { IfcComponent } from '../../base-types';
-import { IfcContext } from '../context';
-import { IfcManager } from '../ifc';
 import { disposeMeshRecursively } from '../../utils/ThreeUtils';
+import { IfcContext } from '../context';
 import { StoreyManager } from '../display/plans/storey-manager';
+import { IfcManager } from '../ifc';
 
 export interface ExportConfig {
   ifcFileUrl: string;
@@ -106,9 +106,9 @@ export class GLTFManager extends IfcComponent {
    * @url The URL of the GLTF file to load
    */
   async loadModel(url: string) {
-    const gltfMesh = await this.getGltfMesh(url);
+    const modelId = this.getModelID();
+    const gltfMesh = await this.getGltfMesh(url, modelId);
     gltfMesh.geometry.computeBoundsTree();
-    gltfMesh.modelID = this.getModelID();
     this.context.getScene().add(gltfMesh);
     this.setupMeshAsModel(gltfMesh);
     return gltfMesh;
@@ -496,12 +496,17 @@ export class GLTFManager extends IfcComponent {
     return Math.max(...allIDs) + 1;
   }
 
-  private async getGltfMesh(url: string) {
+  private async getGltfMesh(url: string, modelId: number) {
     const allMeshes = await this.getMeshes(url);
     const geometry = this.getGeometry(allMeshes);
     const materials = this.getMaterials(allMeshes);
     this.cleanUpLoadedInformation(allMeshes);
-    return new Mesh(geometry, materials) as any as IFCModel;
+
+    // TODO fix this temp hack - cannot use IFCModel constructor because it's not exported
+    //return new IFCModel(modelId, geometry, materials);
+    const mesh = new Mesh(geometry, materials) as any as IFCModel;
+    (mesh as any).modelID = modelId;
+    return mesh;
   }
 
   // Necessary to make the glTF work as a model

@@ -1,7 +1,7 @@
-import { LineSegments, EdgesGeometry, Material, Mesh } from 'three';
-import { Subset } from 'web-ifc-three/IFC/components/subsets/SubsetManager';
-import { IfcContext } from '../context';
+import { Subset } from '@olifyio/web-ifc-three/IFC/components/subsets/SubsetManager';
+import { EdgesGeometry, LineSegments, Material, Mesh } from 'three';
 import { disposeMeshRecursively } from '../../utils/ThreeUtils';
+import { IfcContext } from '../context';
 
 export class Edges {
   threshold = 30;

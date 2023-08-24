@@ -1,7 +1,6 @@
 {
-  "version": "1.0.117",
-  "name": "@olifyio/web-ifc-viewer",
   "version": "1.0.218",
+  "name": "@olifyio/web-ifc-viewer",
   "description": "IFC viewer",
   "main": "dist/index.js",
   "type": "module",
@@ -29,18 +28,18 @@
   },
   "homepage": "https://github.com/OlifyIO/web-ifc-viewer",
   "dependencies": {
-    "camera-controls": "^1.33.1",
+    "@olifyio/web-ifc-three": "0.0.125",
+    "camera-controls": "^2.7.1",
     "dat.gui": "^0.7.7",
     "gsap": "^3.7.1",
+    "three": "^0.155.0",
     "three-mesh-bvh": "^0.5.11",
-    "web-ifc": "^0.0.39",
-    "@olifyio/web-ifc-three": "0.0.100"
+    "web-ifc": "^0.0.39"
   },
   "devDependencies": {
     "@types/dat.gui": "^0.7.7",
     "@types/jest": "^26.0.23",
     "@types/node": "^14.14.31",
-    "@types/three": "^0.134.0",
     "@typescript-eslint/eslint-plugin": "^4.27.0",
     "@typescript-eslint/parser": "^4.27.0",
     "cpy-cli": "^3.1.1",
@@ -61,6 +60,6 @@
     "path": false
   },
   "peerDependencies": {
-    "three": "^0.135.0"
+    "three": "^0.155.0"
   }
 }

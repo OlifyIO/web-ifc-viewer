@@ -2,10 +2,10 @@ import CameraControls from 'camera-controls';
 import {
   Box3,
   Camera,
+  MOUSE,
   MathUtils,
   Matrix4,
   Mesh,
-  MOUSE,
   OrthographicCamera,
   PerspectiveCamera,
   Quaternion,
@@ -19,16 +19,16 @@ import {
 import {
   CameraProjections,
   IfcComponent,
+  NavModeManager,
   NavigationMode,
-  NavigationModes,
-  NavModeManager
+  NavigationModes
 } from '../../../base-types';
 import { LiteEvent } from '../../../utils/LiteEvent';
+import { IfcContext } from '../context';
 import { FirstPersonControl } from './controls/first-person-control';
 import { OrbitControl } from './controls/orbit-control';
 import { PlanControl } from './controls/plan-control';
 import { ProjectionManager } from './projection-manager';
-import { IfcContext } from '../context';
 
 const subsetOfTHREE = {
   MOUSE,

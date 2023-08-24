@@ -561,6 +561,14 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@olifyio/web-ifc-three@0.0.125":
+  version "0.0.125"
+  resolved "https://registry.yarnpkg.com/@olifyio/web-ifc-three/-/web-ifc-three-0.0.125.tgz#2b85b37efa22e8d4c343f52b343811437cd85dcb"
+  integrity sha512-UjWd4wVNe0h5dhBOOM5keo8YieELZt+qQ9juGeqWkWgj7A8urGbTnyOY0aYvtDRvM0MPLgF+eqsijqUszJbh4w==
+  dependencies:
+    three-mesh-bvh "0.5.21"
+    web-ifc "^0.0.41"
+
 "@rollup/plugin-commonjs@^19.0.0":
   version "19.0.0"
   resolved "https://registry.npmjs.org/@rollup/plugin-commonjs/-/plugin-commonjs-19.0.0.tgz"
@@ -783,7 +791,7 @@
 
 "@types/three@^0.134.0":
   version "0.134.0"
-  resolved "https://registry.npmjs.org/@types/three/-/three-0.134.0.tgz"
+  resolved "https://registry.yarnpkg.com/@types/three/-/three-0.134.0.tgz#22ae9892f4490faaf35f0ccea127df18407b8ab3"
   integrity sha512-4YB+99Rgqq27EjiYTItEoZtdjLnTh8W9LxowgpC9eWsjaQJIL4Kn/ZcUKAnW3gB/jS4hqGN8iqmid+RcUZDzpA==
 
 "@types/yargs-parser@*":
@@ -1374,6 +1382,11 @@ camera-controls@^1.33.1:
   version "1.33.1"
   resolved "https://registry.npmjs.org/camera-controls/-/camera-controls-1.33.1.tgz"
   integrity sha512-+l0LgV+w0G4GAtwiSahHLj7rCqzVMSa+/BHE3+aE7vdku2B9QF8CXgDSlCH9cBt2TZeg+WQSkRPeIYwjvtjdPw==
+
+camera-controls@^2.7.1:
+  version "2.7.1"
+  resolved "https://registry.yarnpkg.com/camera-controls/-/camera-controls-2.7.1.tgz#7b2e86390d0f8b6622d17295cf7ce539cc3a7dbe"
+  integrity sha512-xkXpMRp8h7FDSXtN3W0/1CQ9q6jN4B3Use2YmzVpL7ERIqU7yfiXWWZhvQAk9FrOAp7So9vNs9hvP2lAYCZ64A==
 
 caniuse-lite@^1.0.30001219:
   version "1.0.30001241"
@@ -4972,10 +4985,10 @@ three-mesh-bvh@^0.5.11:
   resolved "https://registry.npmjs.org/three-mesh-bvh/-/three-mesh-bvh-0.5.11.tgz"
   integrity sha512-blVHefpW+aRqB7XZcL8MEJrVwGoX9COqCgGccgzhLoPwLEdIWz4bs2FGdLECIpAEHHThL6nQodQ2S8WAs/H3CA==
 
-three@0.135:
-  version "0.135.0"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.135.0.tgz#cff4ec8edd3c51ce9bc7e88d13e8eafed4d0ddfc"
-  integrity sha512-kuEpuuxRzLv0MDsXai9huCxOSQPZ4vje6y0gn80SRmQvgz6/+rI0NAvCRAw56zYaWKMGMfqKWsxF9Qa2Z9xymQ==
+three@^0.155.0:
+  version "0.155.0"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.155.0.tgz#cca9b8ad817830c8b4fdd8f0d9a12a2e413a2672"
+  integrity sha512-sNgCYmDijnIqkD/bMfk+1pHg3YzsxW7V2ChpuP6HCQ8NiZr3RufsXQr8M3SSUMjW4hG+sUk7YbyuY0DncaDTJQ==
 
 throat@^6.0.1:
   version "6.0.1"
@@ -5276,10 +5289,27 @@ web-ifc-three@^0.0.125:
     three-mesh-bvh "0.5.21"
     web-ifc "^0.0.39"
 
+web-ifc-viewer@1.0.218:
+  version "1.0.218"
+  resolved "https://registry.yarnpkg.com/web-ifc-viewer/-/web-ifc-viewer-1.0.218.tgz#dc616bae3f083d7051cc14db586e1e6fd9edb5cb"
+  integrity sha512-qLY36+KFNG9g6VTGplVks3WyAm6DxdmGXfKyTCaDcg993sbHBn+KpeMyP75RNIwjvZ3pg2yPgPV3U9vJ1LITtA==
+  dependencies:
+    camera-controls "^1.33.1"
+    dat.gui "^0.7.7"
+    gsap "^3.7.1"
+    three-mesh-bvh "^0.5.11"
+    web-ifc "^0.0.39"
+    web-ifc-three "^0.0.125"
+
 web-ifc@^0.0.39:
   version "0.0.39"
   resolved "https://registry.yarnpkg.com/web-ifc/-/web-ifc-0.0.39.tgz#c3c7e9b16aad79f8ad78e346671cb5b854480737"
   integrity sha512-sg+DyxDiyXBqlXXbz+uSqw8IGX+mVvHmn2+hg6UXDvAcrzJJw8EI2H4ZzlxWxCqqdpGVeK0wCpdeQm43UCDbrA==
+
+web-ifc@^0.0.41:
+  version "0.0.41"
+  resolved "https://registry.yarnpkg.com/web-ifc/-/web-ifc-0.0.41.tgz#6f1be8a6173067981b90a9b0ea4dec5abd6d3337"
+  integrity sha512-rSucJcwWDw6jrfxPu77jVcpCU6otMd3qWYsH+6L3nr5jJVr4S1O5rAZfkKNlpBM5m0mDvSHU3DzXm9SXfGqBkw==
 
 webidl-conversions@^5.0.0:
   version "5.0.0"
